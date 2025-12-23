@@ -106,7 +106,7 @@ public class ManajemenMahasiswa extends JFrame {
         add(mainContent, BorderLayout.CENTER);
 
         // Default buka Dashboard
-        SwingUtilities.invokeLater(() -> ((JButton)sidebar.getComponent(2)).doClick());
+        SwingUtilities.invokeLater(() -> ((JButton) sidebar.getComponent(2)).doClick());
     }
 
     private JPanel createSidebar() {
@@ -153,12 +153,17 @@ public class ManajemenMahasiswa extends JFrame {
         btn.setMaximumSize(new Dimension(200, 45));
         btn.setAlignmentX(CENTER_ALIGNMENT);
         // Border putih tipis agar terlihat rapi
-        btn.setBorder(new CompoundBorder(new LineBorder(new Color(255,255,255,50)), new EmptyBorder(10, 15, 10, 15)));
+        btn.setBorder(new CompoundBorder(new LineBorder(new Color(255, 255, 255, 50)), new EmptyBorder(10, 15, 10, 15)));
 
         // Efek Hover Mouse
         btn.addMouseListener(new MouseAdapter() {
-            public void mouseEntered(MouseEvent e) { if (btn != activeMenuButton) btn.setBackground(new Color(52, 152, 219)); }
-            public void mouseExited(MouseEvent e) { if (btn != activeMenuButton) btn.setBackground(C_MAIN); }
+            public void mouseEntered(MouseEvent e) {
+                if (btn != activeMenuButton) btn.setBackground(new Color(52, 152, 219));
+            }
+
+            public void mouseExited(MouseEvent e) {
+                if (btn != activeMenuButton) btn.setBackground(C_MAIN);
+            }
         });
 
         // Aksi Klik
@@ -229,18 +234,25 @@ public class ManajemenMahasiswa extends JFrame {
         JPanel toolbar = new JPanel(new FlowLayout(FlowLayout.LEFT));
         toolbar.setBackground(C_BG);
 
-        JLabel lCari = new JLabel("Cari Data: "); lCari.setFont(F_LABEL);
-        JTextField tCari = new JTextField(20); tCari.setFont(F_TEXT);
+        JLabel lCari = new JLabel("Cari Data: ");
+        lCari.setFont(F_LABEL);
+        JTextField tCari = new JTextField(20);
+        tCari.setFont(F_TEXT);
         JButton bCari = createStyledButton("Cari", C_MAIN);
         JButton bAdd = createStyledButton("+ Tambah", new Color(46, 204, 113));
 
-        toolbar.add(lCari); toolbar.add(tCari); toolbar.add(bCari);
-        toolbar.add(Box.createHorizontalStrut(20)); toolbar.add(bAdd);
+        toolbar.add(lCari);
+        toolbar.add(tCari);
+        toolbar.add(bCari);
+        toolbar.add(Box.createHorizontalStrut(20));
+        toolbar.add(bAdd);
 
         // Setup Tabel
         String[] cols = {"NIM", "Nama", "Prodi", "Angkatan", "Status"};
         tableModel = new DefaultTableModel(cols, 0) {
-            public boolean isCellEditable(int row, int col) { return false; }
+            public boolean isCellEditable(int row, int col) {
+                return false;
+            }
         };
 
         table = new JTable(tableModel);
@@ -253,269 +265,12 @@ public class ManajemenMahasiswa extends JFrame {
         // Rata Tengah Isi Tabel
         DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
         centerRenderer.setHorizontalAlignment(JLabel.CENTER);
-        for(int i=0; i<table.getColumnCount(); i++) table.getColumnModel().getColumn(i).setCellRenderer(centerRenderer);
+        for (int i = 0; i < table.getColumnCount(); i++)
+            table.getColumnModel().getColumn(i).setCellRenderer(centerRenderer);
 
         // Fitur Sorting
         TableRowSorter<DefaultTableModel> sorter = new TableRowSorter<>(tableModel);
         table.setRowSorter(sorter);
 
-        // Tombol Aksi Bawah
-        JPanel bottom = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        bottom.setBackground(C_BG);
-        JButton bEdit = createStyledButton("Edit Data", Color.ORANGE);
-        JButton bDel = createStyledButton("Hapus Data", new Color(231, 76, 60));
-        bottom.add(bEdit); bottom.add(bDel);
-
-        // --- Logic Tombol ---
-        bCari.addActionListener(e -> {
-            String text = tCari.getText();
-            if (text.trim().length() == 0) sorter.setRowFilter(null);
-            else sorter.setRowFilter(RowFilter.regexFilter("(?i)" + text));
-        });
-
-        bAdd.addActionListener(e -> showFormDialog(null));
-
-        bEdit.addActionListener(e -> {
-            int row = table.getSelectedRow();
-            if (row < 0) JOptionPane.showMessageDialog(this, "Pilih data dulu!");
-            else {
-                String nim = (String) table.getValueAt(table.convertRowIndexToModel(row), 0);
-                Mahasiswa m = listMahasiswa.stream().filter(x -> x.getNim().equals(nim)).findFirst().orElse(null);
-                showFormDialog(m);
-            }
-        });
-
-        bDel.addActionListener(e -> {
-            int row = table.getSelectedRow();
-            if (row < 0) JOptionPane.showMessageDialog(this, "Pilih data dulu!");
-            else {
-                if (JOptionPane.showConfirmDialog(this, "Yakin hapus?", "Konfirmasi", JOptionPane.YES_NO_OPTION) == 0) {
-                    String nim = (String) table.getValueAt(table.convertRowIndexToModel(row), 0);
-                    listMahasiswa.removeIf(m -> m.getNim().equals(nim));
-                    refreshTable(); saveData(); addLog("Hapus Data: " + nim);
-                }
-            }
-        });
-
-        p.add(toolbar, BorderLayout.NORTH);
-        p.add(new JScrollPane(table), BorderLayout.CENTER);
-        p.add(bottom, BorderLayout.SOUTH);
-        mainContent.add(p, "LIST");
-    }
-
-    // 3. History
-    private void createHistoryPage() {
-        JPanel p = new JPanel(new BorderLayout());
-        p.setBackground(C_BG);
-        p.setBorder(new EmptyBorder(25, 25, 25, 25));
-
-        JLabel l = new JLabel("Riwayat Aktivitas"); l.setFont(F_HEADER);
-        l.setBorder(new EmptyBorder(0, 0, 15, 0));
-
-        txtLog = new JTextArea();
-        txtLog.setEditable(false);
-        txtLog.setFont(new Font("Monospaced", Font.PLAIN, 14));
-        txtLog.setBorder(new EmptyBorder(10, 10, 10, 10));
-
-        // Load data history saat awal
-        loadHistory();
-
-        p.add(l, BorderLayout.NORTH);
-        p.add(new JScrollPane(txtLog), BorderLayout.CENTER);
-        mainContent.add(p, "HIST");
-    }
-
-    // ---------------------------------------------------------
-    // C. POP-UP DIALOG (INPUT DATA)
-    // ---------------------------------------------------------
-    private void showFormDialog(Mahasiswa editData) {
-        boolean isEdit = (editData != null);
-        JDialog d = new JDialog(this, isEdit ? "Edit Data" : "Tambah Data", true);
-        d.setLayout(new BorderLayout());
-
-        JPanel form = new JPanel(new GridBagLayout());
-        form.setBackground(Color.WHITE);
-        form.setBorder(new EmptyBorder(30, 30, 30, 30));
-
-        JTextField tNim = new JTextField();
-        JTextField tNama = new JTextField();
-        JTextField tProdi = new JTextField();
-        JTextField tAngkatan = new JTextField();
-        String[] statusOpt = {"Aktif", "Tidak Aktif", "Cuti", "Lulus", "DO"};
-        JComboBox<String> cStatus = new JComboBox<>(statusOpt);
-
-        // Styling Component
-        Dimension dim = new Dimension(300, 35);
-        for(JComponent c : new JComponent[]{tNim, tNama, tProdi, tAngkatan, cStatus}) {
-            c.setFont(F_TEXT);
-            c.setPreferredSize(dim);
-        }
-        cStatus.setBackground(Color.WHITE);
-
-        if (isEdit) {
-            tNim.setText(editData.getNim()); tNim.setEditable(false);
-            tNama.setText(editData.getNama());
-            tProdi.setText(editData.getProdi());
-            tAngkatan.setText(String.valueOf(editData.getAngkatan()));
-            cStatus.setSelectedItem(editData.getStatus());
-        }
-
-        // Layout Form
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(10, 0, 10, 0);
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.anchor = GridBagConstraints.WEST;
-
-        int y = 0;
-        addFormRow(form, "NIM:", tNim, y++, gbc);
-        addFormRow(form, "Nama Lengkap:", tNama, y++, gbc);
-        addFormRow(form, "Program Studi:", tProdi, y++, gbc);
-        addFormRow(form, "Angkatan:", tAngkatan, y++, gbc);
-        addFormRow(form, "Status:", cStatus, y++, gbc);
-
-        // Tombol Simpan
-        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        JButton bSave = createStyledButton("Simpan", new Color(46, 204, 113));
-        JButton bCancel = createStyledButton("Batal", Color.GRAY);
-
-        bSave.addActionListener(e -> {
-            try {
-                if(tNim.getText().isEmpty() || tNama.getText().isEmpty() || tProdi.getText().isEmpty())
-                    throw new Exception("Data wajib diisi semua!");
-
-                int angk = Integer.parseInt(tAngkatan.getText());
-
-                if(isEdit) {
-                    editData.setNama(tNama.getText());
-                    editData.setProdi(tProdi.getText());
-                    editData.setAngkatan(angk);
-                    editData.setStatus(cStatus.getSelectedItem().toString());
-                    addLog("Update Data: " + editData.getNim());
-                } else {
-                    String nim = tNim.getText();
-                    if(listMahasiswa.stream().anyMatch(m -> m.getNim().equals(nim))) throw new Exception("NIM sudah ada!");
-
-                    listMahasiswa.add(new Mahasiswa(nim, tNama.getText(), tProdi.getText(), angk, cStatus.getSelectedItem().toString()));
-                    addLog("Tambah Data: " + nim);
-                }
-                saveData(); refreshTable(); d.dispose();
-                JOptionPane.showMessageDialog(d, "Berhasil disimpan!");
-            } catch (Exception ex) {
-                JOptionPane.showMessageDialog(d, ex.getMessage());
-            }
-        });
-
-        bCancel.addActionListener(e -> d.dispose());
-        btnPanel.add(bCancel); btnPanel.add(bSave);
-
-        d.add(form, BorderLayout.CENTER);
-        d.add(btnPanel, BorderLayout.SOUTH);
-        d.pack(); d.setLocationRelativeTo(this); d.setVisible(true);
-    }
-
-    private void addFormRow(JPanel p, String label, JComponent field, int y, GridBagConstraints gbc) {
-        gbc.gridx = 0; gbc.gridy = y; gbc.weightx = 0.0;
-        JLabel l = new JLabel(label); l.setFont(F_LABEL); l.setForeground(Color.GRAY);
-        p.add(l, gbc);
-
-        gbc.gridx = 1; gbc.weightx = 1.0;
-        gbc.insets = new Insets(10, 20, 10, 0);
-        p.add(field, gbc);
-
-        gbc.insets = new Insets(10, 0, 10, 0); // Reset padding
-    }
-
-    // ---------------------------------------------------------
-    // D. LOGIC & DATA
-    // ---------------------------------------------------------
-    private void refreshTable() {
-        if(tableModel == null) return;
-        tableModel.setRowCount(0);
-        for(Mahasiswa m : listMahasiswa) {
-            tableModel.addRow(new Object[]{m.getNim(), m.getNama(), m.getProdi(), m.getAngkatan(), m.getStatus()});
-        }
-        updateStatistics();
-    }
-
-    private void updateStatistics() {
-        if(labelsStats[0] == null) return;
-        long[] counts = {
-                listMahasiswa.size(),
-                countStatus("Aktif"), countStatus("Tidak Aktif"), countStatus("Cuti"),
-                countStatus("Lulus"), countStatus("DO")
-        };
-        for(int i=0; i<6; i++) labelsStats[i].setText("" + counts[i]);
-    }
-
-    private long countStatus(String s) {
-        return listMahasiswa.stream().filter(m -> m.getStatus().equalsIgnoreCase(s)).count();
-    }
-
-    private void addLog(String msg) {
-        String time = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
-        String entry = "[" + time + "] " + msg + "\n";
-        if(txtLog != null) txtLog.append(entry);
-        try(BufferedWriter w = new BufferedWriter(new FileWriter(FILE_LOG, true))) { w.write(entry); } catch(Exception e){}
-    }
-
-    private void loadHistory() {
-        File f = new File(FILE_LOG);
-        if(!f.exists()) return;
-        try(BufferedReader r = new BufferedReader(new FileReader(f))) {
-            String l; while((l = r.readLine()) != null) txtLog.append(l + "\n");
-        } catch(Exception e){}
-    }
-
-    private void saveData() {
-        try(BufferedWriter w = new BufferedWriter(new FileWriter(FILE_CSV))) {
-            for(Mahasiswa m : listMahasiswa) { w.write(m.toString()); w.newLine(); }
-        } catch(Exception e){}
-    }
-
-    private void loadData() {
-        File f = new File(FILE_CSV);
-        if(!f.exists()) return;
-        try(BufferedReader r = new BufferedReader(new FileReader(f))) {
-            String l;
-            while((l = r.readLine()) != null) {
-                String[] p = l.split(",");
-                if(p.length >= 5) listMahasiswa.add(new Mahasiswa(p[0], p[1], p[2], Integer.parseInt(p[3]), p[4]));
-            }
-            refreshTable();
-        } catch(Exception e){}
-    }
-
-    // --- Helper UI ---
-    private JButton createStyledButton(String text, Color bg) {
-        JButton b = new JButton(text);
-        b.setFont(F_LABEL); b.setBackground(bg); b.setForeground(Color.WHITE);
-        b.setFocusPainted(false); b.setBorder(new EmptyBorder(8, 15, 8, 15)); b.setCursor(new Cursor(12));
-        return b;
-    }
-
-    private void addStatCard(JPanel parent, String title, String sym, Color c, JLabel valLabel) {
-        JPanel card = new JPanel(new BorderLayout());
-        card.setBackground(Color.WHITE);
-        card.setBorder(BorderFactory.createMatteBorder(0, 6, 0, 0, c));
-
-        JLabel s = new JLabel(sym, 0); s.setFont(new Font("Times New Roman", 1, 48));
-        s.setForeground(new Color(c.getRed(), c.getGreen(), c.getBlue(), 100));
-        s.setPreferredSize(new Dimension(80, 0));
-
-        JPanel info = new JPanel(new GridLayout(2, 1));
-        info.setOpaque(false); info.setBorder(new EmptyBorder(15, 10, 15, 10));
-
-        JLabel t = new JLabel(title, 0); t.setFont(F_LABEL); t.setForeground(Color.GRAY);
-        valLabel.setFont(new Font("Times New Roman", 1, 36)); valLabel.setForeground(C_MAIN); valLabel.setHorizontalAlignment(0);
-
-        info.add(t); info.add(valLabel);
-        card.add(s, BorderLayout.WEST); card.add(info, BorderLayout.CENTER);
-        card.setBorder(new CompoundBorder(new LineBorder(new Color(220,220,220)), card.getBorder()));
-        parent.add(card);
-    }
-
-    public static void main(String[] args) {
-        System.setProperty("awt.useSystemAAFontSettings","on");
-        SwingUtilities.invokeLater(() -> new ManajemenMahasiswa().setVisible(true));
     }
 }
