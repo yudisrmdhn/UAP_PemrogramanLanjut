@@ -39,6 +39,7 @@ class Mahasiswa {
     public String getStatus() { return status; }
 
     // Setters untuk update data
+    public void setNim(String nim) { this.nim = nim; }
     public void setNama(String nama) { this.nama = nama; }
     public void setProdi(String prodi) { this.prodi = prodi; }
     public void setAngkatan(int angkatan) { this.angkatan = angkatan; }
@@ -349,7 +350,7 @@ public class ManajemenMahasiswa extends JFrame {
         cStatus.setBackground(Color.WHITE);
 
         if (isEdit) {
-            tNim.setText(editData.getNim()); tNim.setEditable(false);
+            tNim.setText(editData.getNim());
             tNama.setText(editData.getNama());
             tProdi.setText(editData.getProdi());
             tAngkatan.setText(String.valueOf(editData.getAngkatan()));
@@ -380,15 +381,20 @@ public class ManajemenMahasiswa extends JFrame {
                     throw new Exception("Data wajib diisi semua!");
 
                 int angk = Integer.parseInt(tAngkatan.getText());
+                String nim = tNim.getText();
 
                 if(isEdit) {
+                    // Cek NIM duplikat hanya jika NIM diubah
+                    if(!nim.equals(editData.getNim()) && listMahasiswa.stream().anyMatch(m -> m.getNim().equals(nim)))
+                        throw new Exception("NIM sudah ada!");
+
+                    editData.setNim(nim);
                     editData.setNama(tNama.getText());
                     editData.setProdi(tProdi.getText());
                     editData.setAngkatan(angk);
                     editData.setStatus(cStatus.getSelectedItem().toString());
-                    addLog("Update Data: " + editData.getNim());
+                    addLog("Update Data: " + nim);
                 } else {
-                    String nim = tNim.getText();
                     if(listMahasiswa.stream().anyMatch(m -> m.getNim().equals(nim))) throw new Exception("NIM sudah ada!");
 
                     listMahasiswa.add(new Mahasiswa(nim, tNama.getText(), tProdi.getText(), angk, cStatus.getSelectedItem().toString()));
